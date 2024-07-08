@@ -12,6 +12,7 @@ class GoProInterface:
         self.start_timestamps = []
         self.stop_timestamps = []
         self.is_recording = False
+        self.ep_id = 1
        
     def enable_usb_control(self):
         enable_url = self.base_url + "/camera/control/wired_usb"
@@ -40,7 +41,7 @@ class GoProInterface:
         if response.status_code == 200:
             print("Started Recording at timestamp - ", timestamp)
             self.start_timestamps.append(timestamp)
-            is_recording = True
+            self.is_recording = True
             return timestamp
         else:
             print("Failed to start recording at timestamp - ", timestamp, "status code - ", response.status_code)
@@ -54,6 +55,7 @@ class GoProInterface:
         if response.status_code == 200:
             print("Stopped Recording at timestamp - ", timestamp)
             self.stop_timestamps.append(timestamp)
+            self.is_recording = False
             return self.get_last_media_path(), timestamp
         else:
             print("Failed to stop recording at timestamp - ", timestamp, "status code - ", response.status_code)
@@ -72,17 +74,27 @@ class GoProInterface:
         if not self.is_recording:
             filename = self.get_last_media_path()
             metadata = {
+                "file_path": filename,
                 "start_timestamp": self.start_timestamps[-1],
                 "stop_timestamp": self.stop_timestamps[-1],
             }
-            to_append = {filename: metadata}
+            to_append = {"Episode"+str(self.ep_id): metadata}
+            ep_id = ep_id+1
             
             with open(self.yaml_path, 'a') as file:
                 yaml.dump(to_append, file)
             print("Metadata saved successfully!")
         else:
             print("Can't save metadata. Recording is still in progress!")
-        
+    
+    def download_last_media(self):
+        if not self.is_recording:
+            url = self.base_url + "videos/DCIM/" + self.get_last_media_path()
+            response = requests.request("GET", url)
+            if response.status_code == 200:
+                print("Downloaded successfully!")
+
+            
     
     # __unused__
     def get_media_list(self):
