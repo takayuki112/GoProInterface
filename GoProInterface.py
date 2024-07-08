@@ -6,7 +6,7 @@ class GoProInterface:
     def __init__(self, ip):
         print("\n\nInitializing GoPro Interface for IP - ", ip)
         self.ip = ip
-        self.base_url = "http://" + ip + "/gopro"
+        self.base_url = "http://" + ip 
         self.yaml_path = "./metadata.yaml"
         
         self.start_timestamps = []
@@ -15,7 +15,7 @@ class GoProInterface:
         self.ep_id = 1
        
     def enable_usb_control(self):
-        enable_url = self.base_url + "/camera/control/wired_usb"
+        enable_url = self.base_url + "/gopro/camera/control/wired_usb"
         response = requests.request("GET", enable_url, params={"p":"1"})
         
         if response.status_code != 200:
@@ -25,7 +25,7 @@ class GoProInterface:
         return response.status_code 
     
     def disable_usb_control(self):
-        disable_url = self.base_url + "/camera/control/wired_usb"
+        disable_url = self.base_url + "/gopro/camera/control/wired_usb"
         response = requests.request("GET", disable_url, params={"p":"0"})
         if response.status_code != 200:
             print("Status code from disabling usb - ", response.status_code)
@@ -34,7 +34,7 @@ class GoProInterface:
         return response.status_code
         
     def start_recording(self):
-        url = self.base_url + "/camera/shutter/start"
+        url = self.base_url + "/gopro/camera/shutter/start"
         response = requests.request("GET", url)
         timestamp = time.time_ns()
         
@@ -48,7 +48,7 @@ class GoProInterface:
             
 
     def stop_recording(self):
-        url = self.base_url + "/camera/shutter/stop"
+        url = self.base_url + "/gopro/camera/shutter/stop"
         response = requests.request("GET", url)
         timestamp = time.time_ns()
         time.sleep(1)
@@ -62,7 +62,7 @@ class GoProInterface:
             return None, None
             
     def get_last_media_path(self):
-        url = self.base_url + "/media/list"
+        url = self.base_url + "/gopro/media/list"
         response = requests.request("GET", url)
         print("Media response status code - ", response.status_code)
         last_dir = response.json()['media'][-1]
@@ -89,12 +89,19 @@ class GoProInterface:
     
     def download_last_media(self):
         if not self.is_recording:
-            url = self.base_url + "videos/DCIM/" + "100GOPRO/GX010104.MP4"
-            response = requests.request("GET", url)
+            url = self.base_url + "/videos/DCIM/" + self.get_last_media_path()
+            response = requests.get(url, stream=True)
+
+            # Check if the request was successful
             if response.status_code == 200:
-                print("Downloaded successfully!")
+                # Open a local file in binary write mode
+                with open("./vids/video.mp4", 'wb') as file:
+                    # Iterate over the response in chunks and write them to the local file
+                    for chunk in response.iter_content(chunk_size=8192):
+                        file.write(chunk)
+                print(f"Downloaded video.mp4 successfully.")
             else:
-                print("response_code", response.status_code)
+                print(f"Failed to download file. Status code: {response.status_code}")
             
     
 
@@ -108,8 +115,9 @@ def test():
     gopro1.disable_usb_control()
     print("Done recording!\n\n")
     time.sleep(1)
+    gopro1.append_metadata()
+
     gopro1.download_last_media()
-  
     # gopro1.get_media_list() 
     # print("Saved at - ", gopro1.get_last_media_path())
     
