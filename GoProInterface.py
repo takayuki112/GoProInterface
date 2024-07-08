@@ -8,6 +8,10 @@ class GoProInterface:
         self.ip = ip
         self.base_url = "http://" + ip + "/gopro"
         self.yaml_path = "./metadata.yaml"
+        
+        self.start_timestamps = []
+        self.stop_timestamps = []
+        self.is_recording = False
        
     def enable_usb_control(self):
         enable_url = self.base_url + "/camera/control/wired_usb"
@@ -35,6 +39,8 @@ class GoProInterface:
         
         if response.status_code == 200:
             print("Started Recording at timestamp - ", timestamp)
+            self.start_timestamps.append(timestamp)
+            is_recording = True
             return timestamp
         else:
             print("Failed to start recording at timestamp - ", timestamp, "status code - ", response.status_code)
@@ -47,7 +53,7 @@ class GoProInterface:
         time.sleep(1)
         if response.status_code == 200:
             print("Stopped Recording at timestamp - ", timestamp)
-            print("File saved at - ", self.get_last_media_path())
+            self.stop_timestamps.append(timestamp)
             return self.get_last_media_path(), timestamp
         else:
             print("Failed to stop recording at timestamp - ", timestamp, "status code - ", response.status_code)
@@ -62,9 +68,20 @@ class GoProInterface:
         path = last_dir['d'] + "/" + filename
         return path        
     
-    def append_metadata(self, metadata):
-        with open(self.yaml_path, 'a') as file:
-            yaml.dump(metadata, file)
+    def append_metadata(self):
+        if not self.is_recording:
+            filename = self.get_last_media_path()
+            metadata = {
+                "start_timestamp": self.start_timestamps[-1],
+                "stop_timestamp": self.stop_timestamps[-1],
+            }
+            to_append = {filename: metadata}
+            
+            with open(self.yaml_path, 'a') as file:
+                yaml.dump(to_append, file)
+            print("Metadata saved successfully!")
+        else:
+            print("Can't save metadata. Recording is still in progress!")
         
     
     # __unused__
@@ -107,6 +124,9 @@ def test():
     print("Done recording!\n\n")
     time.sleep(1)
     
-    gopro1.get_media_list() 
-    print("Saved at - ", gopro1.get_last_media_path())
+    # gopro1.get_media_list() 
+    # print("Saved at - ", gopro1.get_last_media_path())
+    
+    gopro1.append_metadata()
+    
 test()
