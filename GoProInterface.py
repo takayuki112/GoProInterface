@@ -79,7 +79,7 @@ class GoProInterface:
                 "stop_timestamp": self.stop_timestamps[-1],
             }
             to_append = {"Episode"+str(self.ep_id): metadata}
-            ep_id = ep_id+1
+            self.ep_id = self.ep_id+1
             
             with open(self.yaml_path, 'a') as file:
                 yaml.dump(to_append, file)
@@ -89,41 +89,14 @@ class GoProInterface:
     
     def download_last_media(self):
         if not self.is_recording:
-            url = self.base_url + "videos/DCIM/" + self.get_last_media_path()
+            url = self.base_url + "videos/DCIM/" + "100GOPRO/GX010104.MP4"
             response = requests.request("GET", url)
             if response.status_code == 200:
                 print("Downloaded successfully!")
-
+            else:
+                print("response_code", response.status_code)
             
     
-    # __unused__
-    def get_media_list(self):
-        url = self.base_url + "/media/list"
-        response = requests.request("GET", url)
-        print("Media response status code - ", response.status_code)
-        
-        response_media = response.json()['media']
-        # print("Number of Directories - ", len(response_media))
-        
-        # for directory in response_media:
-        #     print(directory['d'])
-        #     for file in directory['fs']:
-        #         print(file['n'])
-        #     print("\n\n")
-        
-        last_dir_array = response_media[-1]['fs']
-        for dict in last_dir_array:
-            print(dict['n'], "created - ", dict['cre'])
-        
-        # print("Response media - ", response_media)
-        
-        # for k, v in response_media.items():
-        #     print(k, v)
-        #     print("\n")
-        # for item in response_media_dict:
-        #     print(item)
-        #     print("\n\n")
-        
 
 def test():
     ip_1 = "172.20.134.51:8080"
@@ -135,10 +108,10 @@ def test():
     gopro1.disable_usb_control()
     print("Done recording!\n\n")
     time.sleep(1)
-    
+    gopro1.download_last_media()
+  
     # gopro1.get_media_list() 
     # print("Saved at - ", gopro1.get_last_media_path())
     
-    gopro1.append_metadata()
-    
+
 test()
